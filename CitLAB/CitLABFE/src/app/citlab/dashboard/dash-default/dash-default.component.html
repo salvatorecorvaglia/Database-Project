@@ -1,0 +1,241 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h4>Do your research</h4>
+        <div class="input-group">
+          <input type="text" class="form-control" aria-label="Text input with segmented dropdown button" name="searchText" #searchText (keyup)="changeText($event)" #textsearchbasic>
+          <div class="input-group-prepend" ngbDropdown [placement]="'bottom-left'">
+              <button class="btn btn-primary" ngbDropdownToggle type="button">Search by</button>
+              <div ngbDropdownMenu>
+                <a class="dropdown-item" href="javascript:" (click)="searchFullText(textsearchbasic.value, null)">Full Text</a>
+                <a class="dropdown-item" href="javascript:" (click)="searchForKeywords(textsearchbasic.value, null)">Keywords</a>
+                <div role="separator" class="dropdown-divider"></div>
+                <a class="dropdown-item" href="javascript:" (click)="openAdvancedSearch(advancedsearchcontent)">Advanced Search</a>
+              </div>
+            </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row" *ngIf="!flagSearch; else donesearch">
+          <div class="col-12">
+            <h4>Fill in your search filter.</h4>
+          </div>
+        </div>
+        <ng-template #donesearch>
+          <div *ngIf="!flagError; else errorsearch">
+            <div *ngIf="docsList && docsList.length > 0; else nodocfound">
+                <div class="row pl-2 pr-2" *ngFor="let doc of docsList | paginate: { itemsPerPage: itemsPerPage, currentPage: currentPage,
+                  totalItems: total, id: 'first' }">
+                  <div class="col-12">
+                    <div class="card border-primary">
+                      <div class="card-header" style="color: white; background-color: #FAFCFF">
+                        <h5>{{checkValue(doc._source['type_paper'])}} - {{checkValue(doc._source['title'].toUpperCase())}}</h5>
+                      </div>
+                      <div class="card-body" id="module">
+                        <blockquote class="blockquote mb-2">
+                          <details>
+                            <summary style="font-size: medium"><b>Astract - </b>{{checkValue(doc._source['abstract']).substring(0, [360])}}</summary>
+                            <div style="font-size: 18px; margin-left: 20px; margin-top: 10px;"><p>{{checkValue(doc._source['abstract'])}}</p></div>
+                          </details>
+                          <footer class="blockquote-footer" style="font-size: 14px;"><b>Written by: </b>{{checkValue(doc._source['writers'])}}.
+                            <div style="float: right"><div *ngIf="doc._source['created_on']; else alternativeyear"><b>Created on: </b>{{checkValue(doc._source['created_on'])}}</div>
+                            <ng-template #alternativeyear><b>Created on: </b>{{checkValue(doc._source['year'])}}</ng-template></div>
+                          </footer>
+                          <cite title="Source Title"></cite>
+                        </blockquote>
+                        <a class="card-link card-link-doc">Quoted from {{doc._source['mentioned_in'].length}}</a>
+                        <!--<a class="card-link card-link-doc">All {{doc._source['n_version']}} versions</a>-->
+                        <a class="card-link card-link-doc" (click)="openTree(treecontent, doc['_id'], checkValue(doc._source['title']))">Tree diagram for quotes</a>
+                        <a class="card-link card-link-doc" (click)="openTreeWriters(treewriterscontent, doc['_id'], checkValue(doc._source['title']), doc._source['writers'], doc._source['references'])">Writers diagram for quotes</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <div class="row" *ngIf="total!=0">
+                <div class="col-12 text-center">
+                  <pagination-controls (pageChange)="currentPage = $event" id="first" (click)="paginationSearch(currentPage)"></pagination-controls>
+                </div>
+              </div>
+            </div>
+            <ng-template #nodocfound><h4>Documents not founds.</h4></ng-template>
+          </div>
+          <ng-template #errorsearch>
+            <div class="alert alert-danger" role="alert">
+              {{errorMessage}}
+            </div>
+          </ng-template>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--MODAL TREE-->
+<ng-template #treecontent let-modal>
+  <div class="modal-header modal-header-tree">
+    <h4 class="modal-title" id="modal-basic-title-tree">Diagram Tree {{titleTree.toUpperCase()}}</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="container" *ngIf="!flagTree; else errortree">
+      <tree-diagram [data]="data"></tree-diagram>
+    </div>
+    <ng-template #errortree>
+      <div class="alert alert-danger" role="alert">
+        {{errorMessage}}
+      </div>
+    </ng-template>
+  </div>
+</ng-template>
+
+<!--WRITERS TREE-->
+<ng-template #treewriterscontent let-modal>
+  <div class="modal-header modal-header-tree">
+    <h4 class="modal-title" id="modal-basic-title-tree-writers">Diagram Tree {{titleTree.toUpperCase()}}</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="container pb-5" *ngIf="!flagTreeWriters; else errortree">
+      <h1>Select the author:</h1>
+      <select (change)="openTreePlotSelected($event.target.value)">
+        <option value="" selected>Scegli Autore</option>
+        <option *ngFor="let c of arrayWriterSelect" [ngValue]="c">{{c}}</option>
+      </select>
+      <div class="row" *ngIf="flagActivePlot && optionsCited.series[0]['data'].length > 0 && optionsCited.series[0]['data'].length < 30; else renderizeCitedChart">
+        <highcharts-chart
+          [Highcharts]="HighchartsCited"
+          constructorType="chart"
+          [options]="optionsCited"
+          [(update)]="updateFlag"
+          style="width: 1500px; height: 700px; display: block;"
+        ></highcharts-chart>
+      </div>
+      <ng-template #renderizeCitedChart>
+        <div class="row" *ngIf="optionsCited.series[0]['data'].length !== 0">
+          <highcharts-chart
+            [Highcharts]="HighchartsCited"
+            constructorType="chart"
+            [options]="optionsCited"
+            [(update)]="updateFlag"
+            style="width: 1500px; height: 1500px; display: block;"
+          ></highcharts-chart>
+        </div>
+      </ng-template>
+      <div class="row" *ngIf="flagActivePlot && optionsReferences.series[0]['data'].length > 0">
+        <highcharts-chart
+          [Highcharts]="HighchartsReferences"
+          constructorType="chart"
+          [options]="optionsReferences"
+          [(update)]="updateFlag"
+          style="width: 1500px; height: 1500px; display: block;"
+        ></highcharts-chart>
+      </div>
+    </div>
+    <ng-template #errortree>
+      <div class="alert alert-danger" role="alert">
+        {{errorMessage}}
+      </div>
+    </ng-template>
+  </div>
+</ng-template>
+
+<!--ADVANCED SEARCH-->
+<ng-template #advancedsearchcontent let-modal>
+  <div class="modal-header modal-header-tree">
+    <h4 class="modal-title" id="modal-basic-title-advanced-search">Find Document</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body pl-5 pr-5">
+    <!-- Form -->
+    <form #advancedsearchform="ngForm" id="ngForm" (ngSubmit)="advancedSearch(advancedsearchform)">
+      <div class="form-group row">
+        <label for="allWord" class="col-sm-4 col-form-label label-cls">with <b>all</b> the words</label>
+        <div class="col-sm-8">
+          <input type="text" class="form-control" id="allWord" placeholder="" ngModel name="aw" [(ngModel)]="lastAdvancedSearch.aw">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="allPhrase" class="col-sm-4 col-form-label label-cls">with <b>the exact phrase</b></label>
+        <div class="col-sm-8">
+          <input type="text" class="form-control" id="allPhrase" placeholder="" ngModel name="ap" [(ngModel)]="lastAdvancedSearch.ap">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="atLeastOne" class="col-sm-4 col-form-label label-cls">with <b>at least one</b> of the words</label>
+        <div class="col-sm-8">
+          <input type="text" class="form-control" id="atLeastOne" placeholder="" ngModel name="alw" [(ngModel)]="lastAdvancedSearch.alw">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="withoutWords" class="col-sm-4 col-form-label label-cls"><b>without the words</b></label>
+        <div class="col-sm-8">
+          <input type="text" class="form-control" id="withoutWords" placeholder="" ngModel name="wtw" [(ngModel)]="lastAdvancedSearch.wtw">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="location" class="col-sm-4 col-form-label label-cls">where the words are found</label>
+        <div class="col-sm-8">
+          <select class="browser-default custom-select mb-4" id="location" ngModel name="waf" [(ngModel)]="lastAdvancedSearch.waf">
+            <option value="" selected>Choose option</option>
+            <option value="1" [ngValue]="1">anywhere in the article</option>
+            <option value="2" [ngValue]="2">in the title of the article</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="authors" class="col-sm-4 col-form-label label-cls">Return articles <b>written</b> by</label>
+        <div class="col-sm-8">
+          <input type="text" class="form-control" id="authors" placeholder="" ngModel name="raw" [(ngModel)]="lastAdvancedSearch.raw">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label for="company" class="col-sm-4 col-form-label label-cls">Return articles <b>published</b> by</label>
+        <div class="col-sm-8">
+          <input type="text" class="form-control" id="company" placeholder="" ngModel name="rap" [(ngModel)]="lastAdvancedSearch.rap">
+        </div>
+      </div>
+
+      <div class="form-group row">
+        <label class="col-sm-4 col-form-label label-cls">Return items from <b>dates</b> between</label>
+        <div class="col-sm-4 form-inline">
+          <input id="datestart" [startDate]="{year: 2020, month: 1, day: 1}" class="form-control" placeholder="yyyy-mm-dd" name="dp1" [(ngModel)]="model1" ngbDatepicker #d1="ngbDatepicker" (ngModelChange)="compareDate(model1, model2)">&nbsp;
+          <label style="cursor: pointer" for="datestart" (click)="d1.toggle();" class="label-cls">
+            <img src="../../../../assets/images/icon/calendar.png" class="img-fluid" alt="Responsive image" width="30px">
+          </label>
+        </div>
+        <div class="col-sm-4 form-inline">
+          <input id="dateend" [startDate]="{year: 2020, month: 1, day: 1}" class="form-control" placeholder="yyyy-mm-dd" name="dp2" [(ngModel)]="model2" ngbDatepicker #d2="ngbDatepicker" (ngModelChange)="compareDate(model1, model2)">&nbsp;
+          <label style="cursor: pointer" for="dateend" (click)="d2.toggle()" class="label-cls">
+            <img src="../../../../assets/images/icon/calendar.png" class="img-fluid" alt="Responsive image" width="30px">
+          </label>
+        </div>
+      </div>
+    </form>
+    <div class="alert alert-primary" role="alert">
+      The stop words will be automatically removed from the search to best refine the results. Stop words are words
+      which are filtered out before or after processing of natural language data (text).
+    </div>
+    <div class="alert alert-danger" role="alert" *ngIf="!flagButtonAdvancedSearch">
+      {{errorMessage}}
+    </div>
+  </div>
+  <div class="modal-footer p-2">
+    <button type="button" class="btn btn-outline-dark" form="ngForm" (click)="clearFilter()">Clear</button>
+    <button type="button" type="submit" class="btn btn-primary" form="ngForm" [disabled]="!flagButtonAdvancedSearch">Search</button>
+  </div>
+</ng-template>
+
+<ngx-spinner bdColor="rgba(255, 255, 255, 0.8)" size="medium" color="#0275d8" type="ball-spin-clockwise"></ngx-spinner>

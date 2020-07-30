@@ -1,0 +1,48 @@
+{
+  "source": {
+    "type": "file",
+    "location": "PDF/prova.pdf",
+    "filename": "prova.pdf"
+  },
+  "metadata": {
+    "CreationDate": "D:20171214071938Z",
+    "Creator": "Adobe InDesign CS6 (Windows)",
+    "ModDate": "D:20171214071939Z",
+    "Producer": "Adobe PDF Library 10.0.1",
+    "Trapped": "False",
+    "xap": {
+      "CreateDate": "2017-12-14T07:19:38Z",
+      "MetadataDate": "2017-12-14T07:19:39Z",
+      "ModifyDate": "2017-12-14T07:19:39Z",
+      "CreatorTool": "Adobe InDesign CS6 (Windows)"
+    },
+    "xapmm": {
+      "InstanceID": "uuid:5e85e1e0-49bd-4e43-9bf8-b420c080c3cc",
+      "OriginalDocumentID": "xmp.did:B2C59A163194E611BD009A7CB80B8EC7",
+      "DocumentID": "xmp.id:173D0D249FE0E71192C7DA2EF08785F3",
+      "RenditionClass": "proof:pdf",
+      "DerivedFrom": "\n            ",
+      "History": [
+        "\n                  "
+      ]
+    },
+    "dc": {
+      "format": "application/pdf"
+    },
+    "pdf": {
+      "Producer": "Adobe PDF Library 10.0.1",
+      "Trapped": "False"
+    },
+    "Pages": 24
+  },
+  "references": {
+    "url": [
+      "https://www",
+      "10.1136/bmjopen-2017-018647",
+      "advice.ca/up",
+      "10.1136/",
+      "http://www",
+      "Gov.UK"
+    ]
+  }
+}
